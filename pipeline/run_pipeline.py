@@ -43,9 +43,10 @@ def run_transform() -> None:
     """Run the dbt project after ingestion has completed."""
     environment = os.environ.copy()
     environment["DUCKDB_PATH"] = str(DUCKDB_PATH)
-    dbt_executable = Path(sys.executable).with_name("dbt")
     dbt_command = [
-        str(dbt_executable),
+        sys.executable,
+        "-m",
+        "dbt.cli.main",
         "build",
         "--project-dir",
         str(TRANSFORM_DIR),
