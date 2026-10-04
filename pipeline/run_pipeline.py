@@ -43,10 +43,9 @@ def run_transform() -> None:
     """Run the dbt project after ingestion has completed."""
     environment = os.environ.copy()
     environment["DUCKDB_PATH"] = str(DUCKDB_PATH)
+    dbt_executable = Path(sys.executable).with_name("dbt")
     dbt_command = [
-        sys.executable,
-        "-m",
-        "dbt.cli.main",
+        str(dbt_executable),
         "build",
         "--project-dir",
         str(TRANSFORM_DIR),
@@ -54,19 +53,11 @@ def run_transform() -> None:
         str(TRANSFORM_DIR),
     ]
 
-    result = subprocess.run(dbt_command, env=environment)
-    if result.returncode == 0:
-        return
-
-    print("Incremental dbt build failed; rebuilding the generated silver schema from bronze.")
+    # Silver models are fully rebuilt as tables every run. 
     with duckdb.connect(str(DUCKDB_PATH)) as connection:
         connection.execute("DROP SCHEMA IF EXISTS silver CASCADE")
 
-    subprocess.run(
-        [*dbt_command, "--full-refresh"],
-        check=True,
-        env=environment,
-    )
+    subprocess.run(dbt_command, check=True, env=environment)
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
